@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #6366f133 transparent;
+}
+
+body {
+  background: #080a0c;
+  color: #e9ecef;
+  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6366f133;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6366f155;
+}
+
+::selection {
+  background: #6366f144;
+  color: #e9ecef;
+}
+
+@layer components {
+  .container-main {
+    @apply max-w-[1700px] mx-auto px-8 lg:px-16;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent-300 via-accent-400 to-accent-600;
+  }
+
+  .glass-card {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl;
+  }
+
+  .glow-border {
+    @apply border border-accent/20 hover:border-accent/40 transition-all duration-500;
+  }
+
+  .section-padding {
+    @apply py-24 md:py-32;
+  }
+
+  .section-subtitle {
+    @apply text-accent-400 font-mono text-sm tracking-[0.2em] uppercase mb-4;
+  }
+
+  .section-title {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* GPU layer promotion for GSAP-animated elements */
+[data-hero-title],
+[data-r-title] {
+  will-change: transform, opacity, filter;
+}
+
+[data-img-parallax] {
+  will-change: transform;
+}

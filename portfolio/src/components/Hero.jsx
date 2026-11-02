@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { HiArrowDown, HiMail } from "react-icons/hi";
-import Prism from "./Prism";
+import HeroOpening from "./HeroOpening";
 import profile from "../data/profile";
 import { useHeroTimeline } from "../lib/animations";
 
@@ -15,26 +15,12 @@ export default function Hero() {
       id="hero"
       className="relative w-full h-screen min-h-[700px] flex items-center justify-center overflow-hidden"
     >
-      {/* Prism WebGL Background */}
-      <div className="absolute inset-0 z-0">
-        <Prism
-          animationType="rotate"
-          timeScale={0.3}
-          height={3.5}
-          baseWidth={5.5}
-          scale={3.2}
-          hueShift={0}
-          colorFrequency={0.8}
-          noise={0.3}
-          glow={0.8}
-          bloom={1.2}
-          suspendWhenOffscreen={true}
-        />
-      </div>
+      {/* 初音未来星河开屏：底图 + 银河/流星粒子 + 球体呼吸 + Lottie */}
+      <HeroOpening />
 
       {/* Darkening overlays for text readability */}
-      <div data-hero-overlay className="absolute inset-0 z-1 bg-gradient-to-b from-dark-950/30 via-dark-950/20 to-dark-950/70" />
-      <div data-hero-overlay className="absolute inset-0 z-1 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(8,10,12,0.75)_70%)]" />
+      <div data-hero-overlay className="absolute inset-0 z-1 bg-gradient-to-b from-dark-950/15 via-dark-950/5 to-dark-950/55" />
+      <div data-hero-overlay className="absolute inset-0 z-1 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(8,10,12,0.5)_70%)]" />
 
       {/* Decorative grid */}
       <div

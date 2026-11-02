@@ -1,0 +1,188 @@
+/* HexLoader —— 全屏六边形加载页（sci-fi HUD）
+   仅供本组件使用，类名统一 hl- 前缀，避免污染全局样式 */
+
+.hl-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  background: transparent;   /* 底色由 .hl-veil 提供，溶解时才能露出下方真实页面 */
+  pointer-events: auto;
+  contain: layout paint;
+}
+
+/* ---------- L0 暗场渐晕 ---------- */
+.hl-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(90% 70% at 50% 45%, #0c0e16 0%, #07080b 60%, #05060a 100%);
+  opacity: 1;
+}
+
+/* ---------- L1 二进制底纹 ---------- */
+.hl-bin {
+  position: absolute;
+  inset: -10% -5%;
+  z-index: 2;
+  display: flex;
+  gap: 26px;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #1e2536;
+  opacity: 0.55;
+  user-select: none;
+  pointer-events: none;
+  will-change: opacity;
+}
+.hl-bin > div {
+  animation: hl-flick 4.5s steps(1) infinite;
+}
+@keyframes hl-flick {
+  0%, 100% { opacity: 0.55; }
+  47% { opacity: 0.55; }
+  48% { opacity: 0.18; }
+  62% { opacity: 0.62; }
+  63% { opacity: 0.3; }
+}
+
+/* ---------- L2 六边形网格 ---------- */
+.hl-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(120% 120% at 50% 50%, #000 30%, #000 70%, transparent 100%);
+          mask-image: radial-gradient(120% 120% at 50% 50%, #000 30%, #000 70%, transparent 100%);
+}
+
+/* ---------- L3 中央加载器 ---------- */
+.hl-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.hl-aperture {
+  width: 124px;
+  height: 124px;
+  filter: drop-shadow(0 0 14px rgba(160, 180, 255, 0.28));
+}
+.hl-blades {
+  transform-origin: 56px 56px;
+  animation: hl-spin 9s linear infinite;
+}
+.hl-ticks {
+  transform-origin: 56px 56px;
+  animation: hl-spin 26s linear infinite reverse;
+}
+@keyframes hl-spin {
+  to { transform: rotate(360deg); }
+}
+
+.hl-brand {
+  position: relative;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.38em;
+  text-indent: 0.38em;
+  text-transform: uppercase;
+  color: #e6eaf2;
+  white-space: nowrap;
+}
+.hl-brand::before,
+.hl-brand::after {
+  content: attr(data-txt);
+  position: absolute;
+  inset: 0;
+}
+.hl-brand::before {
+  color: #22d3ee;
+  clip-path: inset(0 0 55% 0);
+  animation: hl-gl1 3.4s steps(2) infinite;
+}
+.hl-brand::after {
+  color: #f472b6;
+  clip-path: inset(58% 0 0 0);
+  animation: hl-gl2 3.9s steps(2) infinite;
+}
+@keyframes hl-gl1 {
+  0%, 90%, 100% { transform: translate(0, 0); opacity: 0; }
+  91% { transform: translate(-2px, -1px); opacity: 0.85; }
+  95% { transform: translate(1px, 0); opacity: 0.5; }
+}
+@keyframes hl-gl2 {
+  0%, 86%, 100% { transform: translate(0, 0); opacity: 0; }
+  87% { transform: translate(2px, 1px); opacity: 0.8; }
+  93% { transform: translate(-1px, 0); opacity: 0.45; }
+}
+
+.hl-wave {
+  width: 190px;
+  height: 22px;
+  opacity: 0.85;
+}
+
+.hl-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, Consolas, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  color: #9aa3b2;
+}
+.hl-status b {
+  color: #c7d2fe;
+  font-weight: 400;
+}
+.hl-bar {
+  position: relative;
+  width: 118px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.hl-bar > i {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0), #a5b4fc);
+}
+.hl-caret {
+  display: inline-block;
+  width: 6px;
+  height: 11px;
+  margin-left: 4px;
+  background: #c7d2fe;
+  animation: hl-blink 1s steps(1) infinite;
+  vertical-align: -1px;
+}
+@keyframes hl-blink {
+  50% { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .hl-aperture { width: 96px; height: 96px; }
+  .hl-brand { font-size: 10px; letter-spacing: 0.3em; }
+  .hl-wave { width: 150px; }
+  .hl-bin { gap: 22px; font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hl-blades, .hl-ticks, .hl-brand::before, .hl-brand::after,
+  .hl-caret, .hl-bin > div { animation: none !important; }
+}

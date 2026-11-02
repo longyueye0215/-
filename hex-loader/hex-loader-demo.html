@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>六边形加载效果 · 复刻 Demo</title>
+<style>
+  :root{
+    --bg:#080a0c;
+    --ink:#e9ecef;
+    --accent:#6366f1;
+    --line:rgba(196,210,255,.9);
+    --mono:"JetBrains Mono","Fira Code",ui-monospace,SFMono-Regular,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:var(--mono);overflow:hidden}
+
+  /* ---------- 底下真实页面（被遮住的内容） ---------- */
+  .page{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;padding:8vw;gap:18px}
+  .page h1{font-family:"Inter","Noto Sans SC",sans-serif;font-size:clamp(32px,7vw,86px);letter-spacing:-.02em;line-height:.95}
+  .page h1 span{background:linear-gradient(90deg,#a5b4fc,#6366f1);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .page p{max-width:44ch;color:#8b94a3;font-size:14px;line-height:1.7}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:22px;max-width:760px}
+  .card{border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02);border-radius:12px;padding:14px}
+  .card b{display:block;font-size:20px;color:#c7d2fe}
+  .card i{font-style:normal;font-size:11px;color:#6c757d;letter-spacing:.1em}
+
+  /* ---------- L0 二进制底纹 ---------- */
+  .veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(90% 70% at 50% 45%,#0c0e16 0%,#07080b 60%,#05060a 100%);opacity:1}
+  .binstream{position:fixed;inset:-10% -5%;display:flex;gap:26px;opacity:.55;pointer-events:none;
+    font-size:12px;line-height:1.6;color:#1e2536;user-select:none;z-index:2}
+  .binstream div{animation:flick 4.5s steps(1) infinite}
+  @keyframes flick{0%,100%{opacity:.55}47%{opacity:.55}48%{opacity:.18}62%{opacity:.62}63%{opacity:.3}}
+
+  /* ---------- L1 六边形网格 ---------- */
+  #hexgrid{position:fixed;inset:0;z-index:3;pointer-events:none}
+  /* 边缘更亮、中心更暗的暗角遮罩 */
+  #hexwrap{position:fixed;inset:0;z-index:3;pointer-events:none;
+    -webkit-mask-image:radial-gradient(120% 120% at 50% 50%,#000 30%,#000 70%,transparent 100%);
+            mask-image:radial-gradient(120% 120% at 50% 50%,#000 30%,#000 70%,transparent 100%)}
+
+  /* ---------- L2 中央加载器 ---------- */
+  .loader{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;
+    display:flex;flex-direction:column;align-items:center;gap:15px;opacity:0}
+  .loader.on{opacity:1}
+  .aperture{width:124px;height:124px;filter:drop-shadow(0 0 14px rgba(160,180,255,.28))}
+  .blades{transform-origin:56px 56px;animation:spin 9s linear infinite}
+  .ticks{transform-origin:56px 56px;animation:spin 26s linear infinite reverse}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .brand{font-size:11px;letter-spacing:.38em;color:#e6eaf2;text-transform:uppercase;position:relative;white-space:nowrap}
+  .brand::before,.brand::after{content:attr(data-txt);position:absolute;inset:0}
+  .brand::before{color:#22d3ee;clip-path:inset(0 0 55% 0);animation:gl1 3.4s steps(2) infinite}
+  .brand::after{color:#f472b6;clip-path:inset(58% 0 0 0);animation:gl2 3.9s steps(2) infinite}
+  @keyframes gl1{0%,92%,100%{transform:translate(0,0);opacity:0}93%{transform:translate(-2px,-1px);opacity:.85}96%{transform:translate(1px,0);opacity:.5}}
+  @keyframes gl2{0%,88%,100%{transform:translate(0,0);opacity:0}89%{transform:translate(2px,1px);opacity:.8}94%{transform:translate(-1px,0);opacity:.45}}
+
+  .wave{width:190px;height:22px;opacity:.85}
+  .status{display:flex;align-items:center;gap:9px;font-size:9.5px;letter-spacing:.16em;color:#9aa3b2}
+  .status b{color:#c7d2fe;font-weight:400}
+  .bar{width:118px;height:1px;background:rgba(255,255,255,.12);position:relative;overflow:hidden}
+  .bar i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,rgba(99,102,241,0),#a5b4fc);}
+  .caret{display:inline-block;width:6px;height:11px;background:#c7d2fe;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ---------- 控制条 ---------- */
+  .hud{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9;display:flex;gap:8px;
+    background:rgba(8,10,12,.72);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(10px);
+    padding:7px;border-radius:10px;opacity:0;transition:opacity .4s}
+  .hud.show{opacity:1}
+  .hud button{all:unset;cursor:pointer;font-size:11px;letter-spacing:.08em;color:#9aa3b2;
+    padding:6px 11px;border-radius:6px;border:1px solid transparent;transition:.2s}
+  .hud button:hover{color:#e9ecef;background:rgba(255,255,255,.05)}
+  .hud button.act{color:#c7d2fe;border-color:rgba(99,102,241,.45);background:rgba(99,102,241,.12)}
+
+  /* ---------- 结构标注 ---------- */
+  .tag{position:fixed;z-index:8;font-size:10px;letter-spacing:.16em;color:#a5b4fc;
+    border:1px solid rgba(99,102,241,.45);background:rgba(99,102,241,.1);padding:4px 8px;border-radius:4px;
+    opacity:0;transition:opacity .3s;pointer-events:none}
+  .tag.on{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- 真实页面 -->
+<main class="page">
+  <h1>赵鹏 <span>/ ZHAO PENG</span></h1>
+  <p>跨界的本质是好奇心的延展，每一次身份切换，都是对自我边界的重新丈量。</p>
+  <div class="cards">
+    <div class="card"><b>100万+</b><i>累计创作文字</i></div>
+    <div class="card"><b>7</b><i>重跨界身份</i></div>
+    <div class="card"><b>N1</b><i>日语能力</i></div>
+    <div class="card"><b>2</b><i>项目负责人</i></div>
+  </div>
+</main>
+
+<div class="veil" id="veil"></div>
+<div class="binstream" id="binstream"></div>
+<canvas id="hexgrid"></canvas>
+<div id="hexwrap"></div>
+
+<!-- 加载器 -->
+<div class="loader" id="loader">
+  <svg class="aperture" viewBox="0 0 112 112" fill="none">
+    <g class="ticks" stroke="rgba(255,255,255,.22)" stroke-width="1">
+      <circle cx="56" cy="56" r="53" stroke-dasharray="2 7"/>
+      <circle cx="56" cy="56" r="49" stroke="rgba(255,255,255,.10)" stroke-dasharray="1 4"/>
+    </g>
+    <g class="blades">
+      <circle cx="56" cy="56" r="33" fill="#f4f6fb"/>
+      <!-- 四条裂缝 -->
+      <g stroke="#080a0c" stroke-width="3">
+        <path d="M56 23 L56 40" transform="rotate(38 56 56)"/>
+        <path d="M56 23 L56 40" transform="rotate(128 56 56)"/>
+        <path d="M56 23 L56 40" transform="rotate(218 56 56)"/>
+        <path d="M56 23 L56 40" transform="rotate(308 56 56)"/>
+      </g>
+      <!-- 中心暗色齿轮 -->
+      <circle cx="56" cy="56" r="13" fill="#14161c"/>
+      <g fill="#2b2f3a">
+        <circle cx="56" cy="41" r="2.1"/><circle cx="56" cy="71" r="2.1"/>
+        <circle cx="41" cy="56" r="2.1"/><circle cx="71" cy="56" r="2.1"/>
+        <circle cx="45.4" cy="45.4" r="2.1"/><circle cx="66.6" cy="66.6" r="2.1"/>
+        <circle cx="66.6" cy="45.4" r="2.1"/><circle cx="45.4" cy="66.6" r="2.1"/>
+      </g>
+      <circle cx="56" cy="56" r="5.2" fill="#0b0d12" stroke="#c7d2fe" stroke-width="1.1"/>
+    </g>
+  </svg>
+
+  <div class="brand" data-txt="LONGYUEYE—ARCHIVE">LONGYUEYE—ARCHIVE</div>
+  <svg class="wave" viewBox="0 0 190 22" fill="none"><path id="wavepath" stroke="rgba(199,210,254,.75)" stroke-width="1"/></svg>
+  <div class="status">
+    <span>[ <b>LOADING</b> ]</span>
+    <span class="bar"><i id="bar"></i></span>
+    <span id="pct">00</span>
+    <span>→ <b>ACCESS</b> SYSTEM<span class="caret"></span></span>
+  </div>
+</div>
+
+<div class="hud" id="hud">
+  <button id="replay">重播</button>
+  <button id="slow">0.5×</button>
+  <button id="tags">结构标注</button>
+</div>
+
+<div class="tag" id="tag1" style="left:24px;top:24px">L0 · 二进制底纹</div>
+<div class="tag" id="tag2" style="left:24px;top:56%">L1 · 六边形网格（逐格溶解）</div>
+<div class="tag" id="tag3" style="left:50%;top:calc(50% + 96px);transform:translateX(-50%)">L2 · 光圈加载器 + 状态行</div>
+
+<script>
+/* ============ L0：二进制底纹 ============ */
+(function bin(){
+  const box = document.getElementById('binstream');
+  let html = '';
+  for (let c = 0; c < 46; c++){
+    let col = '';
+    for (let r = 0; r < 30; r++) col += (Math.random() > .5 ? '1' : '0') + '<br>';
+    html += `<div style="animation-delay:${(Math.random()*4).toFixed(2)}s">${col}</div>`;
+  }
+  box.innerHTML = html;
+})();
+
+/* ============ L1：六边形网格 canvas ============ */
+const cv = document.getElementById('hexgrid');
+const ctx = cv.getContext('2d');
+const R = 86;                 // 外接圆半径（平顶六边形：宽=2R，高=√3R）→ 单格约 172px
+const W = R * 2, H = Math.sqrt(3) * R;
+
+let cells = [], dpr = 1;
+
+function buildGrid(){
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = window.innerWidth, h = window.innerHeight;
+  cv.width = w * dpr; cv.height = h * dpr;
+  cv.style.width = w + 'px'; cv.style.height = h + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  cells = [];
+  const cols = Math.ceil(w / (R * 1.5)) + 2;
+  const rows = Math.ceil(h / H) + 2;
+  const cx0 = w / 2, cy0 = h / 2;
+  for (let c = -1; c < cols; c++){
+    for (let r = -1; r < rows; r++){
+      const cx = c * R * 1.5;
+      const cy = r * H + (c % 2 ? H / 2 : 0);
+      const dx = cx - cx0, dy = cy - cy0;
+      cells.push({
+        cx, cy,
+        d: Math.hypot(dx, dy) / Math.hypot(cx0, cy0),   // 0=中心 1=角落
+        rnd: Math.random(),
+        seed: Math.random() * 6.28,
+        hot: Math.random() > .95
+      });
+    }
+  }
+}
+buildGrid();
+window.addEventListener('resize', buildGrid);
+
+function hexPath(cx, cy, r){
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++){
+    const a = (Math.PI / 3) * i;
+    const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/* 状态：0=淡入 1=保持 2=逐格溶解 3=完成 */
+let alpha = 0, t = 0, dissolve = 0;
+
+function draw(now){
+  const w = window.innerWidth, h = window.innerHeight;
+  ctx.clearRect(0, 0, w, h);
+  ctx.lineWidth = 1;
+
+  for (const c of cells){
+    let a = alpha * (0.13 + 0.24 * (1 - c.d));           // 中心更暗、边缘更亮
+    // 逐格溶解：按到中心的距离做错峰
+    const k = Math.max(0, Math.min(1, (dissolve - (c.d * .55 + c.rnd * .25)) / .35));
+    a *= (1 - k);
+    // 少量格子呼吸高亮
+    if (c.hot) a += 0.11 * (0.5 + 0.5 * Math.sin(now / 700 + c.seed));
+    if (a <= 0.004) continue;
+
+    const accentCell = c.hot && c.d > .28;
+    ctx.strokeStyle = accentCell
+      ? `rgba(165,180,252,${Math.min(a, 1)})`
+      : `rgba(196,210,255,${Math.min(a, 1)})`;
+    hexPath(c.cx, c.cy, R * (1 - k * 0.06));
+    ctx.stroke();
+  }
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+
+/* ============ L2：正弦波 ============ */
+const wave = document.getElementById('wavepath');
+function drawWave(phase, amp){
+  let d = '';
+  for (let x = 0; x <= 190; x += 2){
+    const y = 11 + Math.sin(x / 12 + phase) * amp * (0.55 + 0.45 * Math.sin(x / 60 + phase * .5));
+    d += (x ? 'L' : 'M') + x + ' ' + y.toFixed(2) + ' ';
+  }
+  wave.setAttribute('d', d);
+}
+drawWave(0, 6);
+
+/* ============ 时间轴编排 ============ */
+const loader = document.getElementById('loader');
+const bar = document.getElementById('bar');
+const pct = document.getElementById('pct');
+const hud = document.getElementById('hud');
+const veil = document.getElementById('veil');
+const bin = document.getElementById('binstream');
+
+const T = { in: 420, hold: 2150, out: 820 };   // ms
+let scale = 1, t0 = performance.now(), raf = null, playing = false;
+
+function ease(x){ return x < .5 ? 2*x*x : 1 - Math.pow(-2*x + 2, 2) / 2; }
+function easeOut(x){ return 1 - Math.pow(1 - x, 3); }
+
+function play(){
+  playing = true;
+  t0 = performance.now();
+  dissolve = 0; alpha = 0;
+  veil.style.opacity = '.98'; bin.style.opacity = '.55';
+  loader.style.opacity = '0';
+  hud.classList.remove('show');
+  document.querySelector('.page').style.filter = 'none';
+}
+
+function applyState(el, now){
+  const pIn = Math.min(1, el / T.in);
+  alpha = 0.92 * easeOut(pIn);                              // 网格淡入
+
+  const holdStart = T.in * 0.55;
+  const appear = Math.max(0, Math.min(1, (el - holdStart) / 280));
+  loader.style.opacity = String(easeOut(appear));
+  const prog = Math.max(0, Math.min(1, (el - holdStart) / T.hold));
+  bar.style.width = (prog * 100).toFixed(1) + '%';
+  pct.textContent = String(Math.round(prog * 100)).padStart(2, '0');
+  drawWave(now / 220, 5 + 3 * Math.sin(now / 900));
+
+  const outStart = holdStart + T.hold;
+  if (el > outStart){
+    dissolve = Math.min(1.35, (el - outStart) / T.out * 1.35);
+    const fade = Math.max(0, 1 - (el - outStart) / (T.out * .34));
+    veil.style.opacity = String(fade * 0.98);
+    bin.style.opacity = String(fade * 0.55);
+    loader.style.opacity = String(Math.max(0, 1 - (el - outStart) / (T.out * .55)) * (1 - 0));
+  }
+  return el >= outStart + T.out * 1.0;
+}
+
+function tick(now){
+  if (!playing) return;
+  const el = (now - t0) * scale;
+  const done = applyState(el, now);
+  if (done){
+    playing = false;
+    alpha = 0; dissolve = 1.4;
+    veil.style.opacity = '0'; bin.style.opacity = '0';
+    loader.classList.remove('on'); loader.style.opacity = '0';
+    hud.classList.add('show');
+    return;
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ============ 控制 ============ */
+document.getElementById('replay').onclick = () => { play(); requestAnimationFrame(tick); };
+document.getElementById('slow').onclick = (e) => {
+  scale = scale === 1 ? .5 : 1;
+  e.currentTarget.textContent = scale === 1 ? '0.5×' : '1×';
+  e.currentTarget.classList.toggle('act', scale !== 1);
+};
+document.getElementById('tags').onclick = (e) => {
+  const on = e.currentTarget.classList.toggle('act');
+  ['tag1','tag2','tag3'].forEach(id => document.getElementById(id).classList.toggle('on', on));
+};
+
+const frozen = new URLSearchParams(location.search).get('t');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (frozen !== null){
+  const el = Number(frozen) || 0;
+  playing = false;
+  applyState(el, performance.now());
+  if (el >= T.in * .55 + T.hold + T.out) { loader.classList.remove('on'); hud.classList.add('show'); }
+} else if (reduce){
+  alpha = 0; dissolve = 1.4; hud.classList.add('show');
+  veil.style.opacity = '0'; bin.style.opacity = '0';
+} else {
+  play(); requestAnimationFrame(tick);
+}
+</script>
+</body>
+</html>

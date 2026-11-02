@@ -1,0 +1,81 @@
+@keyframes orbBreathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.82;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+}
+
+.orb-breathe {
+  animation: orbBreathe 3.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes orbRing {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.28);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.28);
+    opacity: 0;
+  }
+}
+
+.orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(180, 225, 255, 0.55);
+  animation: orbRing 3s ease-out infinite;
+}
+
+.orb-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(180, 225, 255, 0.32);
+  animation: orbRing 3s ease-out infinite 1.4s;
+}
+
+.orb-hotspot:hover .orb-ring {
+  border-color: rgba(210, 240, 255, 0.95);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-breathe,
+  .orb-ring,
+  .orb-ring::after {
+    animation: none;
+  }
+}
+
+@keyframes cornerPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+.corner-orb {
+  animation: cornerPulse 3s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corner-orb {
+    animation: none;
+  }
+}

@@ -1,47 +1,40 @@
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import About from "./components/About";
-import Experience from "./components/Experience";
-import Projects from "./components/Projects";
-import Strengths from "./components/Strengths";
-import Contact from "./components/Contact";
-import Lightfall from "./components/Lightfall";
+import { useRef, useState } from "react";
+import Landing from "./components/Landing";
+import SectionShell from "./components/SectionShell";
+import WarpTransition from "./components/WarpTransition";
+import HexLoader from "./components/HexLoader";
 
 export default function App() {
+  const [view, setView] = useState("landing");
+  const [warpActive, setWarpActive] = useState(false);
+  const [booting, setBooting] = useState(true);   // 首屏六边形加载页
+  const targetRef = useRef(null);
+
+  const navigate = (target) => {
+    if (warpActive || !target || target === view) return;
+    targetRef.current = target;
+    setWarpActive(true);
+  };
+
+  const handleMid = () => {
+    const t = targetRef.current;
+    if (t) setView(t);
+  };
+
+  const handleDone = () => {
+    setWarpActive(false);
+    targetRef.current = null;
+  };
+
   return (
-    <div className="relative bg-dark-950 min-h-screen">
-      <Navbar />
-      <main>
-        <Hero />
-
-        {/* Lightfall 光流背景包裹内容区 */}
-        <div className="relative">
-          <Lightfall
-            colors={["#6366f1", "#818cf8", "#4f46e5"]}
-            backgroundColor="#080a0c"
-            speed={0.3}
-            streakCount={3}
-            streakWidth={1}
-            streakLength={1}
-            glow={0.6}
-            density={0.35}
-            twinkle={0.6}
-            zoom={3}
-            backgroundGlow={0.15}
-            opacity={0.4}
-            mouseInteraction={true}
-            mouseStrength={0.3}
-            mouseRadius={0.8}
-            mouseDampening={0.2}
-          />
-          <About />
-          <Experience />
-          <Projects />
-          <Strengths />
-        </div>
-
-        <Contact />
-      </main>
-    </div>
+    <>
+      {booting && <HexLoader brand="LONGYUEYE—ARCHIVE" duration={1000} onDone={() => setBooting(false)} />}
+      {view === "landing" ? (
+        <Landing onSelect={navigate} />
+      ) : (
+        <SectionShell view={view} onNavigate={navigate} />
+      )}
+      <WarpTransition active={warpActive} onMid={handleMid} onDone={handleDone} />
+    </>
   );
 }
